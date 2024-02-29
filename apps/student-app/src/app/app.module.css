@@ -1,1 +1,9 @@
 /* Your styles goes here. */
+.content {
+    display: block;
+    visibility: visible;
+}
+.hidden-content{
+    display: none;
+    visibility: hidden;
+}
