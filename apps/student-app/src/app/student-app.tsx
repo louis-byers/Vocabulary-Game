@@ -5,8 +5,8 @@ import { Data, WordList, Word } from '@vocabulary-game/types';
 function get_test_data(course_code: string) {
   return test_data();
 }
-function test_data(): Data {
-  return {
+function test_data(): Promise<Data> {
+  return Promise.resolve({
     author: {
       id: '42',
       email: 'useremail@gmail.com',
@@ -33,157 +33,164 @@ function test_data(): Data {
         ],
       },
     ],
-  };
+  });
 }
 
 export function StudentApp({ title }: { title: string }) {
-  const [error, setError] = useState('null');
-  const [screen, setScreen] = useState('splash');
-  const [course_code, setCourse] = useState('');
-  const [word_list_name, setWordList] = useState('');
+  enum StudentState {
+    splash_state,
+    course_state,
+    word_list_state,
+    game_state,
+    score_state,
+    review_words_state,
+  }
   // Setup the state
+  const [error, setError] = useState('null');
+  const [screen, setScreen] = useState(StudentState.splash_state);
+  const [course_code, setCourse] = useState('');
+  //
+  const [score, setScore] = useState(0);
+  const [time_remaining, setTimeRemaining] = useState(60);
+  //
+  const [data, setData] = useState<Data | null>(null);
+  const [selected_word_list, setSelectedWordList] = useState<WordList | null>({
+    id: '',
+    name: '',
+    words: [],
+  } as WordList);
+  const [current_word, setCurrentWord] = useState<Word>({word: 'EMPTY', hint: 'EMPTY'} as Word);
 
-  // create the variables
-  var wordLists;
-  var data: Data;
-  var score = 0;
-  var time_remaining = 60;
-  var word_list: WordList;
-  var hint = '';
-  var word = '';
-  var answered = false;
-  var is_correct = false;
-  var words_in_game: Word[] = [];
-  // Score Related Methods
-  function increment_score() {
-    score++;
-  }
-  function set_word_list(selected_list: WordList) {
-    word_list = selected_list;
+  const [words_in_game, setWordsInGame] = useState<Word[]>([]);
+  const [words_correct, setWordsCorrect] = useState<Word[]>([]);
+  const [words_skipped, setWordsSkipped] = useState<Word[]>([]);
+ 
+  // Starts a new game.
+  // Can only reset game if word list is selected
+  function start_new_game(): void {
+    setScore(0)
+    setTimeRemaining(60)
+    setCurrentWord(selected_word_list?.words[Math.floor(Math.random() * selected_word_list?.words.length)] ?? {word: 'EMPTY', hint: 'EMPTY'} as Word);
+    // start clock
   }
 
-  // Pick random word from word list
-  function next_word() {
-    const word_obj =
-      word_list.words[Math.floor(Math.random() * word_list.words.length)];
-    hint = word_obj.hint;
-    word = word_obj.word;
-    words_in_game.push(word_obj);
-  }
-
-  // To reset the game
-  function reset_game() {
-    score = 0;
-    time_remaining = 60;
-    hint = '';
-    word = '';
+  // Pick random word from word list and saves current word as skipped or correct
+  function next_word(is_answer_correct:boolean): void {
+    setWordsInGame(words_in_game.concat(words_in_game, [current_word]));
+    if (is_answer_correct) {
+      setWordsCorrect(words_correct.concat(words_correct, [current_word]));
+      setScore(words_correct.length)
+    }
+    else {
+      setWordsSkipped(words_skipped.concat(words_skipped, [current_word]));
+    }
+    setCurrentWord(selected_word_list?.words[Math.floor(Math.random() * selected_word_list?.words.length)] ?? {word: 'EMPTY', hint: 'EMPTY'} as Word);
   }
 
   // to populate the LI elements for the word lists ()
   // Idea is to set the word list here, then confirm later in the form
-  function get_word_list_items() {
-    const listItems = data.word_lists.map((word_list: WordList) => {
+  function populate_word_list_items() {
+    return data?.word_lists.map((word_list: WordList) => {
       return (
         <li
-          onClick={(e) => handleSetWordList(e, word_list.id)}
-          id={word_list.id}
+          id={word_list.id} key={word_list.id}
         >
-          <b>{word_list.name}:</b> word_list.words.length
+          <button id={`word-list-${word_list.id}`} onClick={() => handleSetWordList(word_list.id)}>
+            <b>{word_list.name}:</b> Words: {word_list.words.length}
+            </button>
         </li>
       );
     });
-    wordLists = { listItems };
+
   }
 
   // Creates a list of words that were in the game.
   // Populates a UL element on game-words page.
   function get_words_from_game() {
-    const listItems = words_in_game.map((word: Word) => {
+    return words_in_game.map((word: Word) => {
       return (
-        <li id="word${word.word}">
-          <b>word.word:</b> word.hint
+        <li id={`word-${word.word}`}  key={`word-${word.word}`}>
+          <b className={words_correct.includes(word) ? 'correct-word' : 'incorrect-word'}>{word.word}:</b> {word.hint}
         </li>
       );
     });
-    return { listItems };
   }
 
   // Button to go to Crouse page
-  function handleToCourse(e: any) {
+  function handleToCourse(e: any): void {
     try {
       setError('null');
-      setScreen('course');
+      setScreen(StudentState.course_state);
     } catch (err) {
       setError('error-word-list');
     }
   }
 
   // Back button to return to Splash page
-  function handleBackToSplash(e: any) {
+  function handleBackToSplash(e: any): void {
     try {
       setError('null');
-      setScreen('splash');
+      setScreen(StudentState.splash_state);
     } catch (err) {
       setError('error-course');
     }
   }
 
   // Back button to return to Course Code page
-  function handleBackToCourse(e: any) {
+  function handleBackToCourse(e: any): void {
     try {
       setError('null');
-      setScreen('course');
+      setScreen(StudentState.course_state);
     } catch (err) {
       setError('error-word-list');
     }
   }
 
   // Back button to return to Word List page
-  function handleBackToWordLists(e: any) {
+  function handleBackToWordLists(e: any): void {
     try {
       setError('null');
-      setScreen('word-list');
+      setScreen(StudentState.word_list_state);
     } catch (err) {
       setError('error-word-list');
     }
   }
 
   // Back button to return to Score page
-  function handleBackToScore(e: any) {
+  function handleBackToScore(e: any): void {
     try {
       setError('null');
-      setScreen('score');
+      setScreen(StudentState.score_state);
     } catch (err) {}
   }
 
   // Replay button that resets the game and starts it again.
-  function handleResetGame(e: any) {
+  function handleResetGame(e: any): void {
     try {
       setError('null');
-      reset_game();
-      setScreen('game');
+      start_new_game();
+      setScreen(StudentState.game_state);
     } catch (err) {}
   }
 
   // Button to visit Word Review page
-  function handleToGameWords(e: any) {
+  function handleToGameWords(e: any): void {
     try {
       setError('null');
-      setScreen('game-words');
+      setScreen(StudentState.review_words_state);
     } catch (err) {}
   }
 
   // Handles course code submission
-  async function handleSubmitCourse(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmitCourse(e: React.FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
     try {
       // GET on course GUID
-      await submitCourse(course_code);
-
-      data = get_test_data(course_code);
-      get_word_list_items();
+      // STUB getting the data
+      setData(await submitCourse(course_code));
+      populate_word_list_items(); //Create the word lists List Items elements
       setError('null');
-      setScreen('word-list');
+      setScreen(StudentState.word_list_state);
     } catch (err) {
       setError('error-course');
     }
@@ -191,13 +198,13 @@ export function StudentApp({ title }: { title: string }) {
 
   // Handles setting the word list to chosen list item ID
   async function handleSetWordList(
-    e: React.MouseEvent<HTMLLIElement, MouseEvent>,
     id: string
-  ) {
+  ): Promise<void> {
     try {
-      word_list = data.word_lists.filter((wrd_lst: WordList) => {
+      ;
+      setSelectedWordList(data?.word_lists.find((wrd_lst: WordList) => {
         return wrd_lst.id === id;
-      });
+      }) ?? null)
       setError('null');
     } catch (err) {
       setError('error-word-list');
@@ -207,42 +214,15 @@ export function StudentApp({ title }: { title: string }) {
   // Handles text entry into Course Code Text field
   function handleCourseChange(e: {
     target: { value: React.SetStateAction<string> };
-  }) {
+  }): void {
     setCourse(e.target.value);
   }
 
-  // handles the submission of the word list once its chosen.
-  async function handleSubmitWordList(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    try {
-      // Set current_word_list
-      word_list = {
-        id: '',
-        name: '',
-        words: [],
-      };
-    } catch (err) {}
-  }
-
-  // Handles word submission. I'll probably change this to a correct / skip button later to simulate head nods and shakes
-  async function handleSubmitWord(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    try {
-      answered = true;
-      // await submitWord(e.target.value);
-      // get answer
-      //check answer against word, if lower cases match, is_correct = true
-      is_correct = true;
-    } catch (err) {
-      is_correct = false;
-    }
-  }
 
   return (
     <>
-      <div
-        id="splash-screen"
-        className={screen === 'splash' ? 'content' : 'hidden-content'}
+      <div id="splash-screen"
+        className={screen === StudentState.splash_state ? 'content' : 'hidden-content'}
       >
         <h1>Vocab Game</h1>
         <div>Splash Screen</div>
@@ -252,9 +232,8 @@ export function StudentApp({ title }: { title: string }) {
         </button>
       </div>
 
-      <div
-        id="course-selection"
-        className={screen === 'course' ? 'content' : 'hidden-content'}
+      <div id="course-selection"
+        className={screen === StudentState.course_state ? 'content' : 'hidden-content'}
       >
         <h1>Vocab Game</h1>
         <div id="course-select">
@@ -286,7 +265,7 @@ export function StudentApp({ title }: { title: string }) {
 
       <div
         id="word-list-selection"
-        className={screen === 'word-list' ? 'content' : 'hidden-content'}
+        className={screen === StudentState.word_list_state ? 'content' : 'hidden-content'}
       >
         <h1>Vocab Game</h1>
         {error === 'error-course' ? (
@@ -302,7 +281,9 @@ export function StudentApp({ title }: { title: string }) {
               </span>
             ) : null}
             <label>Select Word List: </label>
-            <ul id="word-list-list">{wordLists}</ul>
+            <ul id="word-list-list">
+              {populate_word_list_items()}
+              </ul>
             <button type="submit" id="submit-word-list-btn">
               Submit
             </button>
@@ -315,10 +296,10 @@ export function StudentApp({ title }: { title: string }) {
 
       <div
         id="game-screen"
-        className={screen === 'game' ? 'content' : 'hidden-content'}
+        className={screen === StudentState.game_state ? 'content' : 'hidden-content'}
       >
-        <form id="course-select-form" onSubmit={handleSubmitWord}>
-          <h1 id="word-hint-header">{hint}</h1>
+        <form id="course-select-form" >
+          <h1 id="word-hint-header">{current_word?.hint}</h1>
           <label>Enter Word: </label>
           <input
             type="text"
@@ -331,15 +312,8 @@ export function StudentApp({ title }: { title: string }) {
           <div id="word-answer">
             <h2
               id="word-answer-header"
-              className={
-                answered
-                  ? is_correct
-                    ? 'correct-word'
-                    : 'incorrect-word'
-                  : 'word'
-              }
             >
-              {word}
+              {current_word?.word}
             </h2>
           </div>
           <div id="score">Score: {score}</div>
@@ -351,7 +325,7 @@ export function StudentApp({ title }: { title: string }) {
 
       <div
         id="game-screen"
-        className={screen === 'score' ? 'content' : 'hidden-content'}
+        className={screen === StudentState.score_state ? 'content' : 'hidden-content'}
       >
         <h1 id="score-header">Congrats!</h1>
         <div>
@@ -375,14 +349,11 @@ export function StudentApp({ title }: { title: string }) {
 
       <div
         id="game-screen"
-        className={screen === 'game-words' ? 'content' : 'hidden-content'}
+        className={screen === StudentState.review_words_state ? 'content' : 'hidden-content'}
       >
         <h1>Vocab Game</h1>
         <ul>
-          <li>
-            <b>Word</b>: <i>hint</i>
-          </li>
-          {}
+          {get_words_from_game()}
         </ul>
         <button onClick={handleBackToScore}>Back to Score</button>
       </div>
@@ -391,7 +362,7 @@ export function StudentApp({ title }: { title: string }) {
 }
 
 // Stub of GET request for data
-function submitCourse(code: string) {
+function submitCourse(code: string): Promise<Data> {
   // Pretend it's hitting the network.
   return new Promise((resolve, reject) => {
     setTimeout(() => {
@@ -399,7 +370,7 @@ function submitCourse(code: string) {
       if (shouldError) {
         reject(new Error('Unable to find course: "' + code + '".'));
       } else {
-        resolve('Correct!');
+        get_test_data(code).then(d => resolve(d))
       }
     }, 1500);
   });
