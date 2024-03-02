@@ -1,1 +1,60 @@
 /* You can add global styles to this file, and also import other style files */
+.content {
+    display: block;
+    visibility: visible;
+}
+.hidden-content{
+    display: none;
+    visibility: hidden;
+    /* display: block;
+    visibility: visible; */
+}
+
+.word {
+    color: gray;
+    display: block;
+    visibility: visible;
+}
+
+.correct-word {
+    color: rgb(0, 132, 255);
+    display: block;
+    visibility: visible;
+}
+
+.incorrect-word {
+    color: rgb(255, 166, 0);
+    display: block;
+    visibility: visible;
+}
+
+.hidden-word{
+    display: block;
+    visibility: hidden; 
+}
+
+.listblock ul li a {
+    padding: 5px 30px 5px 10px;
+    display: block;
+}
+
+.listblock ul li a:hover {
+    
+}
+
+span.error {
+	width: 200px;
+	position: absolute;
+	top: 25px;
+	left: 50%;
+	margin-left: -100px;
+	font-size: 2em;
+	font-weight: bolder;
+	border: solid 1px #E44234;
+	border-radius: 5px;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	text-align: center;
+	background: #E44234;
+	color: white;
+}
