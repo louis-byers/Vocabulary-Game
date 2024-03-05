@@ -70,6 +70,7 @@ export function StudentApp({ title }: { title: string }) {
   function start_new_game(): void {
     setScore(0)
     setTimeRemaining(60)
+    setScreen(StudentState.game_state)
     setCurrentWord(selected_word_list?.words[Math.floor(Math.random() * selected_word_list?.words.length)] ?? {word: 'EMPTY', hint: 'EMPTY'} as Word);
     // start clock
   }
@@ -206,6 +207,7 @@ export function StudentApp({ title }: { title: string }) {
         return wrd_lst.id === id;
       }) ?? null)
       setError('null');
+      start_new_game()
     } catch (err) {
       setError('error-word-list');
     }
@@ -284,9 +286,6 @@ export function StudentApp({ title }: { title: string }) {
             <ul id="word-list-list">
               {populate_word_list_items()}
               </ul>
-            <button type="submit" id="submit-word-list-btn">
-              Submit
-            </button>
           </form>
           <button id="back-to-course-btn" onClick={handleBackToCourse}>
             Back
@@ -366,8 +365,7 @@ function submitCourse(code: string): Promise<Data> {
   // Pretend it's hitting the network.
   return new Promise((resolve, reject) => {
     setTimeout(() => {
-      let shouldError = code.toLowerCase() !== 'qwerty';
-      if (shouldError) {
+      if (code.toLowerCase() !== 'qwerty') {
         reject(new Error('Unable to find course: "' + code + '".'));
       } else {
         get_test_data(code).then(d => resolve(d))
