@@ -189,7 +189,6 @@ export function StudentApp({ title }: { title: string }) {
       // GET on course GUID
       // STUB getting the data
       setData(await submitCourse(course_code));
-      populate_word_list_items(); //Create the word lists List Items elements
       setError('null');
       setScreen(StudentState.word_list_state);
     } catch (err) {
