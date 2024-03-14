@@ -48,7 +48,7 @@ export function StudentApp({ title }: { title: string }) {
   }
   // Setup the state
   const [error, setError] = useState('null');
-  const [screen, setScreen] = useState(StudentState.splash_state);
+  const [screen, setScreen] = useState(StudentState.game_state);
   const [course_code, setCourse] = useState('');
   //
   const [score, setScore] = useState(0);
@@ -59,7 +59,16 @@ export function StudentApp({ title }: { title: string }) {
   const [selected_word_list, setSelectedWordList] = useState<WordList | null>({
     id: '',
     name: '',
-    words: [],
+    words: [
+      {
+        word: 'buttress',
+        hint: 'A structure built against a wall in order to support or strengthen it.',
+      },
+      {
+        word: 'prestigious',
+        hint: 'Something having the respect and admiration that someone or something gets for being successful or important.',
+      },
+    ],
   } as WordList);
   const [current_word, setCurrentWord] = useState<Word>({word: 'EMPTY', hint: 'EMPTY'} as Word);
 
@@ -111,16 +120,21 @@ export function StudentApp({ title }: { title: string }) {
   // function get_time_left(): number {
   //   return Math.floor((time_game_end? - new Date().getTime()) / 1000);
   // }
-
+  function got_correct(): any {
+    next_word(true)
+  }
+  function skipped(): any {
+    next_word(false)
+  }
   // Pick random word from word list and saves current word as skipped or correct
-  function next_word(is_answer_correct:boolean): void {
-    setWordsInGame(words_in_game.concat(words_in_game, [current_word]));
+  function next_word(is_answer_correct:boolean): any {
+    setWordsInGame(words_in_game.concat([current_word]));
     if (is_answer_correct) {
-      setWordsCorrect(words_correct.concat(words_correct, [current_word]));
+      setWordsCorrect(words_correct.concat([current_word]));
       setScore(words_correct.length)
     }
     else {
-      setWordsSkipped(words_skipped.concat(words_skipped, [current_word]));
+      setWordsSkipped(words_skipped.concat([current_word]));
     }
     setCurrentWord(selected_word_list?.words[Math.floor(Math.random() * selected_word_list?.words.length)] ?? {word: 'EMPTY', hint: 'EMPTY'} as Word);
   }
@@ -333,15 +347,9 @@ export function StudentApp({ title }: { title: string }) {
       >
         <form id="course-select-form" >
           <h1 id="word-hint-header">{current_word?.hint}</h1>
-          <label>Enter Word: </label>
-          <input
-            type="text"
-            id="word-test"
-            name="word-test"
-            placeholder="word"
-          />
           <br></br>
-          <button disabled={false}>Check</button>
+          <button disabled={false} onClick={got_correct}>Correct</button>
+          <button disabled={false} onClick={skipped}>Skip</button>
           <div id="word-answer">
             <h2
               id="word-answer-header"
