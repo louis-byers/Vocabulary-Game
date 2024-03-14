@@ -2,6 +2,7 @@ import React from 'react';
 import { useState } from 'react';
 import { Data, WordList, Word } from '@vocabulary-game/types';
 
+//TEST DATA
 function get_test_data(course_code: string) {
   return test_data();
 }
@@ -51,7 +52,8 @@ export function StudentApp({ title }: { title: string }) {
   const [course_code, setCourse] = useState('');
   //
   const [score, setScore] = useState(0);
-  const [time_remaining, setTimeRemaining] = useState(60);
+  const [countdown, setCountdown] = useState(60);
+  const [time_game_end, setTimeGameEnd] = useState<Date | null>(null);
   //
   const [data, setData] = useState<Data | null>(null);
   const [selected_word_list, setSelectedWordList] = useState<WordList | null>({
@@ -64,16 +66,51 @@ export function StudentApp({ title }: { title: string }) {
   const [words_in_game, setWordsInGame] = useState<Word[]>([]);
   const [words_correct, setWordsCorrect] = useState<Word[]>([]);
   const [words_skipped, setWordsSkipped] = useState<Word[]>([]);
- 
+
+
+  // function updateTimer() {
+  //   const countdownElement = document.getElementById("countdown");
+  //   countdownElement.innerHTML = countdown.toString();
+    
+  //   if (countdown === 0) {
+  //     clearInterval(timerInterval);
+  //     end_game()
+  //   } else {
+  //     setCountdown(countdown-1);
+      
+  //   }
+  //   countdownElement.innerHTML = "${countdown} ${countdown === 1 ? 'second' : 'seconds'}";
+  // }
+  // const timerInterval = setInterval(updateTimer, 1000);
   // Starts a new game.
   // Can only reset game if word list is selected
   function start_new_game(): void {
-    setScore(0)
-    setTimeRemaining(60)
-    setScreen(StudentState.game_state)
-    setCurrentWord(selected_word_list?.words[Math.floor(Math.random() * selected_word_list?.words.length)] ?? {word: 'EMPTY', hint: 'EMPTY'} as Word);
-    // start clock
+    try {
+      setError('null');
+      setScore(0)
+      // var end_time: Date = new Date()
+      // end_time.setSeconds(end_time.getSeconds() + 60)
+      // setTimeGameEnd(end_time)
+      setScreen(StudentState.game_state)
+      setCurrentWord(selected_word_list?.words[Math.floor(Math.random() * selected_word_list?.words.length)] ?? {word: 'EMPTY', hint: 'EMPTY'} as Word);
+    } catch (err) {
+      setError('error-start-game');
+    }
+    
   }
+
+  function end_game() {
+    try {
+      setError('null');
+      setScreen(StudentState.score_state);
+    } catch (err) {
+      setError('error-game');
+    }
+  }
+
+  // function get_time_left(): number {
+  //   return Math.floor((time_game_end? - new Date().getTime()) / 1000);
+  // }
 
   // Pick random word from word list and saves current word as skipped or correct
   function next_word(is_answer_correct:boolean): void {
@@ -264,8 +301,7 @@ export function StudentApp({ title }: { title: string }) {
         </div>
       </div>
 
-      <div
-        id="word-list-selection"
+      <div id="word-list-selection"
         className={screen === StudentState.word_list_state ? 'content' : 'hidden-content'}
       >
         <h1>Vocab Game</h1>
@@ -292,8 +328,7 @@ export function StudentApp({ title }: { title: string }) {
         </div>
       </div>
 
-      <div
-        id="game-screen"
+      <div id="game-screen"
         className={screen === StudentState.game_state ? 'content' : 'hidden-content'}
       >
         <form id="course-select-form" >
@@ -315,14 +350,11 @@ export function StudentApp({ title }: { title: string }) {
             </h2>
           </div>
           <div id="score">Score: {score}</div>
-          <div id="time-left">
-            {time_remaining} {time_remaining === 1 ? 'second' : 'seconds'}
-          </div>
+          <div id="countdown"></div>
         </form>
       </div>
 
-      <div
-        id="game-screen"
+      <div id="score-screen"
         className={screen === StudentState.score_state ? 'content' : 'hidden-content'}
       >
         <h1 id="score-header">Congrats!</h1>
@@ -346,7 +378,7 @@ export function StudentApp({ title }: { title: string }) {
       </div>
 
       <div
-        id="game-screen"
+        id="review-game-screen"
         className={screen === StudentState.review_words_state ? 'content' : 'hidden-content'}
       >
         <h1>Vocab Game</h1>
